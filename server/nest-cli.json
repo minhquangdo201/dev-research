@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "projects": {
+    "version": {
+      "type": "library",
+      "root": "libs/version",
+      "entryFile": "index",
+      "sourceRoot": "libs/version/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/version/tsconfig.lib.json"
+      }
+    },
+    "question": {
+      "type": "library",
+      "root": "libs/question",
+      "entryFile": "index",
+      "sourceRoot": "libs/question/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/question/tsconfig.lib.json"
+      }
+    }
+  },
+  "compilerOptions": {
+    "webpack": true
+  }
+}
