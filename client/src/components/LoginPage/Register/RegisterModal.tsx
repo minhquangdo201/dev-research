@@ -2,7 +2,7 @@ import { ReactElement, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 interface User {
     userName: string;
     password: string;
@@ -14,9 +14,12 @@ interface RegisterProps {
 const RegisterModal = (props: RegisterProps): ReactElement => {
     const [show, setShow] = useState(false);
     const [user, setUser] = useState<User>({ userName: '', password: '' });
-    const handleClose = () => setShow(false);
+    const handleClose = () => {
+        setUser({ userName: '', password: '' })
+        setShow(false);
+    }
     const handleShow = () => setShow(true);
-    const handleSave = () => {
+    const handleSave = async () => {
         if (user.userName === '' || user.password === '') {
             toast.error('Vui lòng không để trống!', {
                 position: toast.POSITION.TOP_RIGHT

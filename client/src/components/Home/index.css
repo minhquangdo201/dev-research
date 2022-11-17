@@ -1,0 +1,16 @@
+.quiz-form {
+    display: grid;
+    text-align: initial;
+    width: 1000px;
+    margin: 40px 300px 0 300px;
+}
+
+.quiz-answer {
+    display: grid;
+}
+
+.answer-button {
+    border: none!important;
+    background-color: white!important;
+    color: black!important;
+}

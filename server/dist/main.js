@@ -2812,6 +2812,10 @@ let UserService = class UserService {
         return this.userModal.find().exec();
     }
     async addUser(user) {
+        const foundUser = await this.findByUserName(user.userName);
+        if (foundUser) {
+            throw new common_1.HttpException('Existed', common_1.HttpStatus.CONFLICT);
+        }
         const u = new this.userModal(user);
         return u.save();
     }

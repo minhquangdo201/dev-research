@@ -9,7 +9,6 @@ export const creatAccount = async (user: User): Promise<any> => {
         password: user.password
     })
         .then(function (response) {
-            console.log(response)
             return response.data
         })
         .catch(function (error) {

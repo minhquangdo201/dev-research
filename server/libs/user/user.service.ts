@@ -17,6 +17,10 @@ export class UserService {
     }
 
     async addUser(user: UserInterface): Promise<UserInterface> {
+        const foundUser = await this.findByUserName(user.userName)
+        if(foundUser) {
+            throw new HttpException('Existed' ,HttpStatus.CONFLICT)
+        }
         const u = new this.userModal(user);
         return u.save()
     }

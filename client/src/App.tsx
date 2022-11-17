@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
 import './App.css';
-import axios from 'axios';
 import LoginPage from './components/LoginPage/LoginPage';
-import { ToastContainer, toast } from 'react-toastify';
-
+import { ToastContainer } from 'react-toastify';
+import { HomePage } from './components/Home/Home';
+import { Routes, Route } from 'react-router-dom'
 const App = () => {
   
 
   return (
-    <div className="App">
-      <LoginPage/>
-      <ToastContainer/>
-    </div>
+    <Routes>
+      <Route path='/' element={<LoginPage />} />
+      <Route path='/home' element={<HomePage />} />
+    </Routes>
   );
 }
 
