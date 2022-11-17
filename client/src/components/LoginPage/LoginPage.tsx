@@ -3,12 +3,14 @@ import RegisterModal from './Register/RegisterModal';
 import './index.css'
 import { creatAccount, login } from './Service/userService';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
     userName: string;
     password: string;
 }
 const LoginPage = () => {
+    let navigate = useNavigate()
     const [users, setUsers] = useState<User[]>([])
     const [loginUserName, setLoginUserName] = useState<string>();
     const [loginPassword, setLoginPassword] = useState<string>();
@@ -26,13 +28,14 @@ const LoginPage = () => {
         e.preventDefault();
         console.log(loginUserName)
         console.log(loginPassword)
-        if(!loginUserName || !loginPassword){
+        if (!loginUserName || !loginPassword) {
             toast.error('Vui lòng nhập đầy đủ !')
             return;
         }
-        const success = await login({userName: loginUserName, password: loginPassword});
+        const success = await login({ userName: loginUserName, password: loginPassword });
         console.log(success)
-        if(success){
+        if (success) {
+            navigate('home')
             toast.success('Đăng nhập thành công!')
         } else {
             toast.error('Tài khoản hoặc mật khẩu không đúng!')
@@ -40,7 +43,7 @@ const LoginPage = () => {
     }
     return (
         <div className='login-form-outer'>
-            <form onSubmit={(e) => handleLogin(e)}>
+            <form className='login-form' onSubmit={(e) => handleLogin(e)}>
                 <h2>Đăng nhập</h2>
                 <div className="login-input">
                     <label htmlFor="">Tài khoản</label>
