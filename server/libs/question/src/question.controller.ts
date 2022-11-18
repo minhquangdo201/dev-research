@@ -1,19 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Req } from "@nestjs/common";
 import { UpdateDto } from "./dto/update-question.dto";
-import { QuestionInterface } from "./question.interface";
+import { QuestionInterface, ResponseQuestion } from "./question.interface";
 import { QuestionService } from "./question.service";
 
 @Controller('question')
 export class QuestionController {
     constructor(private questionService: QuestionService){}
-
-    @Get('current')
-    async getCurrentQuestion(): Promise<QuestionInterface>{
-        return this.questionService.currentQuestion();
-    }
         
     @Get('getAll')
-    async getAll(): Promise<QuestionInterface[]>{
+    async getAll(): Promise<ResponseQuestion[]>{
         return this.questionService.getAll();
     }
 
@@ -30,5 +25,10 @@ export class QuestionController {
     @Put(':id')
     update(@Param('id') id: string, @Body() updateQuestionDto: UpdateDto){
         return this.questionService.update(id, updateQuestionDto)
+    }
+
+    @Post('getRatio')
+    getCorrectRatio(@Param('answer') answer: string[]){
+        return this.questionService.getCorrectRatio(answer)
     }
 }

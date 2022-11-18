@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UpdateDto } from './dto/update-question.dto';
-import { QuestionInterface } from './question.interface';
+import { QuestionInterface, ResponseQuestion } from './question.interface';
 import { Question } from './question.schema';
+
 
 @Injectable()
 export class QuestionService {
@@ -16,12 +17,8 @@ export class QuestionService {
         return q.save();
     }
 
-    async currentQuestion(): Promise<QuestionInterface> {
-        return this.questionModal.findOne({});
-    }
-
-    async getAll(): Promise<QuestionInterface[]>{
-        return this.questionModal.find().exec();
+    async getAll(): Promise<ResponseQuestion[]> {
+        return this.questionModal.find({},{ correctAns: 0})
     }
 
     async remove(id: string) {
@@ -32,6 +29,16 @@ export class QuestionService {
         return this.questionModal.findByIdAndUpdate(id, updateQuestionDto);
     }
 
+    async getCorrectRatio(answer: string[]) : Promise<any>{
+        let count = 0
+        const q = await this.questionModal.find();
+        for(let i = 0; i < q.length; i++){
+            if(answer[i] === q[i].correctAns){
+                count ++;
+            }
+        }
+        return count / q.length
+    }
 
 
 }

@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { async } from "rxjs";
+import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from "./dto/user.dto";
 import { UserInterface } from "./user.interface";
 import { User } from "./user.schema";
@@ -17,6 +17,7 @@ export class UserService {
     }
 
     async addUser(user: UserInterface): Promise<UserInterface> {
+        user.password = await bcrypt.hash(user.password,10);
         const foundUser = await this.findByUserName(user.userName)
         if(foundUser) {
             throw new HttpException('Existed' ,HttpStatus.CONFLICT)
@@ -34,8 +35,9 @@ export class UserService {
         if(!u){
             throw new HttpException('Not found',HttpStatus.NOT_FOUND)
         }
-        if(user.password !== u.password){
-            throw new HttpException('Invalid'+user.password, HttpStatus.UNAUTHORIZED)
+        const isEqual = bcrypt.compareSync(user.password,u.password)
+        if(!isEqual){
+            throw new HttpException('Invalid', HttpStatus.UNAUTHORIZED)
         }
         return u
     }

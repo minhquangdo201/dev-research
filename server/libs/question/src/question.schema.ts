@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory} from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { QuestionInterface } from './question.interface';
+import { QuestionInterface, ResponseQuestion } from './question.interface';
 
 @Schema()
 export class Question extends Document implements QuestionInterface{
@@ -13,8 +13,9 @@ export class Question extends Document implements QuestionInterface{
     @Prop({required: true})
     answers: String[];
 
-    @Prop({required: true})
-    correctAns: String;
+    @Prop()
+    correctAns?: String;
 }
+
 
 export const QuestionSchema = SchemaFactory.createForClass(Question);
