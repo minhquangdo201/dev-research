@@ -30,6 +30,7 @@ export class QuestionService {
     }
 
     async getCorrectRatio(req: ListAnswers) : Promise<any>{
+        console.log(req.answers)
         let count = 0
         let answers = req.answers;
         const totalQues = await this.questionModal.countDocuments()
@@ -42,7 +43,7 @@ export class QuestionService {
                 count ++
             }
         }
-
+        
         return count / totalQues;
     }
 
