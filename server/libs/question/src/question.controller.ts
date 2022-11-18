@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Req } from "@nestjs/common";
 import { UpdateDto } from "./dto/update-question.dto";
-import { QuestionInterface, ResponseQuestion } from "./question.interface";
+import { ListAnswers, QuestionInterface, ResponseQuestion } from "./question.interface";
 import { QuestionService } from "./question.service";
 
 @Controller('question')
@@ -28,7 +28,7 @@ export class QuestionController {
     }
 
     @Post('getRatio')
-    getCorrectRatio(@Param('answer') answer: string[]){
+    getCorrectRatio(@Body() answer: ListAnswers){
         return this.questionService.getCorrectRatio(answer)
     }
 }

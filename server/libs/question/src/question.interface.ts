@@ -10,3 +10,10 @@ export class ResponseQuestion {
     question: String;
     answers: String[];
 }
+export class Answer {
+    id: String;
+    answer: String;    
+}
+export class ListAnswers {
+    answers: Answer[];
+}
