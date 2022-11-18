@@ -4809,11 +4809,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d;
+var _a, _b, _c, _d, _e;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QuestionController = void 0;
 const common_1 = __webpack_require__(3);
 const update_question_dto_1 = __webpack_require__(69);
+const question_interface_1 = __webpack_require__(70);
 const question_service_1 = __webpack_require__(71);
 let QuestionController = class QuestionController {
     constructor(questionService) {
@@ -4865,9 +4866,9 @@ __decorate([
 ], QuestionController.prototype, "update", null);
 __decorate([
     (0, common_1.Post)('getRatio'),
-    __param(0, (0, common_1.Param)('answer')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array]),
+    __metadata("design:paramtypes", [typeof (_e = typeof question_interface_1.ListAnswers !== "undefined" && question_interface_1.ListAnswers) === "function" ? _e : Object]),
     __metadata("design:returntype", void 0)
 ], QuestionController.prototype, "getCorrectRatio", null);
 QuestionController = __decorate([
@@ -4898,13 +4899,19 @@ exports.UpdateDto = UpdateDto;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ResponseQuestion = exports.QuestionInterface = void 0;
+exports.ListAnswers = exports.Answer = exports.ResponseQuestion = exports.QuestionInterface = void 0;
 class QuestionInterface {
 }
 exports.QuestionInterface = QuestionInterface;
 class ResponseQuestion {
 }
 exports.ResponseQuestion = ResponseQuestion;
+class Answer {
+}
+exports.Answer = Answer;
+class ListAnswers {
+}
+exports.ListAnswers = ListAnswers;
 
 
 /***/ }),
@@ -4949,15 +4956,20 @@ let QuestionService = class QuestionService {
     async update(id, updateQuestionDto) {
         return this.questionModal.findByIdAndUpdate(id, updateQuestionDto);
     }
-    async getCorrectRatio(answer) {
+    async getCorrectRatio(req) {
         let count = 0;
-        const q = await this.questionModal.find();
-        for (let i = 0; i < q.length; i++) {
-            if (answer[i] === q[i].correctAns) {
+        let answers = req.answers;
+        const totalQues = await this.questionModal.countDocuments();
+        for (let i = 0; i < answers.length; i++) {
+            const question = await this.questionModal.findOne({ id: answers[i].id });
+            if (!question) {
+                continue;
+            }
+            if (question.correctAns === answers[i].answer) {
                 count++;
             }
         }
-        return count / q.length;
+        return count / totalQues;
     }
 };
 QuestionService = __decorate([
