@@ -1,7 +1,8 @@
 import { ReactElement, useState } from "react"
-import { getQuestion } from "./Services/QuestionServices"
+import { getQuestion, sendAnswers } from "./Services/QuestionServices"
 import './index.css'
 import { Button } from 'react-bootstrap'
+import { idText } from "typescript";
 
 interface Question {
     id: string;
@@ -10,25 +11,41 @@ interface Question {
     correctAns: string;
 }
 
+interface ListAnswers {
+    answers: Answer[]
+}
+
+interface Answer {
+    id?: string;
+    answer?: string;
+}
+
 export const HomePage = (): ReactElement => {
     const [active, setActive] = useState(false);
     const [questions, setQuestions] = useState<Question[]>([]);
+    const [score, setScore] = useState();
     const getListQuestion = async () => {
         const listQuestion: Question[] = await getQuestion()
         setQuestions(listQuestion)
         setActive(true)
     }
+    const listAnswers: ListAnswers = {answers: []}
+    const handleChooseAnswer = (ans: string, id: string) => {
+        for(let i = 0; i < listAnswers.answers.length; i++){
+            if(id == listAnswers.answers[i].id){
+                listAnswers.answers[i].answer = ans
+                return;
+            }
 
-    const correct = ['', '', '', '', '', '', '', '', '', '']
+        }
+        listAnswers.answers.push({id: id, answer:ans})
 
-    const handleChooseAnswer = (ans: string, id: any) => {
-        console.log(id - 1)
-        correct.splice(id - 1, 1, ans)
-        console.log(correct)
     }
 
-    const handleSubmit = (e: any) => {
-        e.currentTarget.disabled = true;
+    const handleSubmit = async () => {
+        const resScore = await sendAnswers(listAnswers)
+        console.log(resScore)
+        setScore(resScore)
     }
 
     return (
@@ -39,7 +56,7 @@ export const HomePage = (): ReactElement => {
                     {questions.map((val, key) => {
 
                         return (
-                            <div key={key}>
+                            <div >
                                 <div>{val.id}. {val.question}</div>
                                 
                                 <Button className="answer-button" onClick={() => { handleChooseAnswer(val.answers[0], val.id) }}>A.{val.answers[0]}</Button>
@@ -52,7 +69,7 @@ export const HomePage = (): ReactElement => {
                             </div>
                         )
                     })}
-                    <Button onClick={(e) => handleSubmit(e)}>Nộp</Button>
+                    {score ? <div>{score}</div> : <Button onClick={handleSubmit}>Nộp</Button>}
                 </div></> : null}
         </div>
     )
