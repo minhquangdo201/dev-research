@@ -32,19 +32,20 @@ export const sendAnswers = async (answers: ListAnswers): Promise<any> => {
     const url = 'http://localhost:8000/question/getRatio'
     try {
         const res = await axios.post(url,answers)
+        console.log(res.data)
         return res.data
     } catch(error){
         return error
     }
-    // console.log(answers)
-    // axios.post('http://localhost:8000/question/getRatio',
-    //     answers
-    // )
-    // .then((res) => {
-    //     console.log(res.data)
-    //     return res.data
-    // })
-    // .catch((error) => {
-    //     return error;
-    // })
 }
+export const cacheAnswer = async (username: any,answers: ListAnswers): Promise<any> => {
+    const url = 'http://localhost:8000/cacheAnswers'
+    try {
+        const res = await axios.post(url, {username, answers})
+        return res.data
+    } catch(error){
+        return error
+    }
+}
+
+

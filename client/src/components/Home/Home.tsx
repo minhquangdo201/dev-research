@@ -1,8 +1,7 @@
 import { ReactElement, useState } from "react"
-import { getQuestion, sendAnswers } from "./Services/QuestionServices"
+import { cacheAnswer, getQuestion, sendAnswers } from "./Services/QuestionServices"
 import './index.css'
 import { Button } from 'react-bootstrap'
-import { idText } from "typescript";
 
 interface Question {
     id: string;
@@ -21,6 +20,7 @@ interface Answer {
 }
 
 export const HomePage = (): ReactElement => {
+    const userName = localStorage.getItem('userName')
     const [active, setActive] = useState(false);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [score, setScore] = useState();
@@ -39,21 +39,25 @@ export const HomePage = (): ReactElement => {
 
         }
         listAnswers.answers.push({id: id, answer:ans})
-
+        console.log(listAnswers)
     }
 
     const handleSubmit = async () => {
         const resScore = await sendAnswers(listAnswers)
-        console.log(resScore)
         setScore(resScore)
     }
 
+    const handleSave = async () => {
+        const saveAnswer = await cacheAnswer(userName,listAnswers)
+        console.log(saveAnswer)
+    }
+    console.log(userName)
     return (
         <div>
             <Button onClick={getListQuestion}>Lấy câu hỏi</Button>
             {active ? <>
                 <div className="quiz-form">
-                    {questions.map((val, key) => {
+                    {questions.map((val) => {
 
                         return (
                             <div >
@@ -69,8 +73,10 @@ export const HomePage = (): ReactElement => {
                             </div>
                         )
                     })}
-                    {score ? <div>{score}</div> : <Button onClick={handleSubmit}>Nộp</Button>}
+                    <Button onClick={handleSave}>Lưu và thoát</Button>
+                    <Button onClick={handleSubmit}>Nộp</Button>
                 </div></> : null}
+                
         </div>
     )
 }

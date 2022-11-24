@@ -24,10 +24,11 @@ exports.AppModule = void 0;
 const common_1 = __webpack_require__(3);
 const app_controller_1 = __webpack_require__(4);
 const app_service_1 = __webpack_require__(5);
-const mongoose_1 = __webpack_require__(35);
-const src_1 = __webpack_require__(66);
-const user_module_1 = __webpack_require__(73);
-const auth_module_1 = __webpack_require__(77);
+const mongoose_1 = __webpack_require__(36);
+const src_1 = __webpack_require__(40);
+const user_module_1 = __webpack_require__(47);
+const auth_module_1 = __webpack_require__(51);
+const redisStore = __webpack_require__(84);
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -37,7 +38,12 @@ AppModule = __decorate([
             user_module_1.UserModule,
             auth_module_1.AuthModule,
             mongoose_1.MongooseModule.forRoot('mongodb://localhost/question-manager'),
-            mongoose_1.MongooseModule.forRoot('mongodb://localhost/user-manager')
+            common_1.CacheModule.register({
+                store: redisStore,
+                host: 'localhost',
+                port: 6379,
+                ttl: 86400
+            })
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
@@ -76,25 +82,33 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AppController = void 0;
 const common_1 = __webpack_require__(3);
 const app_service_1 = __webpack_require__(5);
-const auth_service_1 = __webpack_require__(6);
-const passport_1 = __webpack_require__(39);
+const auth_service_1 = __webpack_require__(7);
 let AppController = class AppController {
     constructor(appService, authService) {
         this.appService = appService;
         this.authService = authService;
     }
-    async login(req) {
-        return this.authService.login(req.user);
+    async saveAnswers(userAnswer) {
+        return await this.appService.saveUserAnswer(userAnswer);
+    }
+    async getAnswers(username) {
+        return await this.appService.getUserAnswers(username);
     }
 };
 __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('local')),
-    (0, common_1.Post)('auth/login'),
-    __param(0, (0, common_1.Request)()),
+    (0, common_1.Post)('cacheAnswers'),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], AppController.prototype, "login", null);
+], AppController.prototype, "saveAnswers", null);
+__decorate([
+    (0, common_1.Post)('getCacheAnswers'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "getAnswers", null);
 AppController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [typeof (_a = typeof app_service_1.AppService !== "undefined" && app_service_1.AppService) === "function" ? _a : Object, typeof (_b = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _b : Object])
@@ -114,19 +128,47 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AppService = void 0;
 const common_1 = __webpack_require__(3);
+const cache_manager_1 = __webpack_require__(6);
 let AppService = class AppService {
+    constructor(cacheManager) {
+        this.cacheManager = cacheManager;
+    }
+    async saveUserAnswer(userAnswer) {
+        await this.cacheManager.set(userAnswer.username, userAnswer.answers, 86400);
+        console.log(await this.cacheManager.get(userAnswer.username));
+    }
+    async getUserAnswers(username) {
+        console.log(await this.cacheManager.get(username));
+        return await this.cacheManager.get(username);
+    }
 };
 AppService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)(common_1.CACHE_MANAGER)),
+    __metadata("design:paramtypes", [typeof (_a = typeof cache_manager_1.Cache !== "undefined" && cache_manager_1.Cache) === "function" ? _a : Object])
 ], AppService);
 exports.AppService = AppService;
 
 
 /***/ }),
 /* 6 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("cache-manager");
+
+/***/ }),
+/* 7 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -155,8 +197,8 @@ var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthService = void 0;
 const common_1 = __webpack_require__(3);
-const jwt_1 = __webpack_require__(7);
-const user_service_1 = __webpack_require__(34);
+const jwt_1 = __webpack_require__(8);
+const user_service_1 = __webpack_require__(35);
 let AuthService = class AuthService {
     constructor(userService, jwtService) {
         this.userService = userService;
@@ -185,7 +227,7 @@ exports.AuthService = AuthService;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -194,29 +236,7 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 exports.__esModule = true;
-__export(__webpack_require__(8));
-
-
-/***/ }),
-/* 8 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-__exportStar(__webpack_require__(9), exports);
-__exportStar(__webpack_require__(11), exports);
-__exportStar(__webpack_require__(14), exports);
+__export(__webpack_require__(9));
 
 
 /***/ }),
@@ -237,10 +257,32 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(10), exports);
+__exportStar(__webpack_require__(12), exports);
+__exportStar(__webpack_require__(15), exports);
 
 
 /***/ }),
 /* 10 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(11), exports);
+
+
+/***/ }),
+/* 11 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -255,7 +297,7 @@ var JwtSecretRequestType;
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -279,9 +321,9 @@ var JwtModule_1;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.JwtModule = void 0;
 const common_1 = __webpack_require__(3);
-const jwt_constants_1 = __webpack_require__(12);
-const jwt_providers_1 = __webpack_require__(13);
-const jwt_service_1 = __webpack_require__(14);
+const jwt_constants_1 = __webpack_require__(13);
+const jwt_providers_1 = __webpack_require__(14);
+const jwt_service_1 = __webpack_require__(15);
 let JwtModule = JwtModule_1 = class JwtModule {
     static register(options) {
         return {
@@ -333,7 +375,7 @@ exports.JwtModule = JwtModule;
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -344,14 +386,14 @@ exports.JWT_MODULE_OPTIONS = 'JWT_MODULE_OPTIONS';
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createJwtProvider = void 0;
-const jwt_constants_1 = __webpack_require__(12);
+const jwt_constants_1 = __webpack_require__(13);
 function createJwtProvider(options) {
     return [{ provide: jwt_constants_1.JWT_MODULE_OPTIONS, useValue: options || {} }];
 }
@@ -359,7 +401,7 @@ exports.createJwtProvider = createJwtProvider;
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -379,9 +421,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.JwtService = void 0;
 const common_1 = __webpack_require__(3);
-const jwt = __webpack_require__(15);
-const interfaces_1 = __webpack_require__(9);
-const jwt_constants_1 = __webpack_require__(12);
+const jwt = __webpack_require__(16);
+const interfaces_1 = __webpack_require__(10);
+const jwt_constants_1 = __webpack_require__(13);
 let JwtService = class JwtService {
     constructor(options = {}) {
         this.options = options;
@@ -449,24 +491,24 @@ exports.JwtService = JwtService;
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 module.exports = {
-  decode: __webpack_require__(16),
-  verify: __webpack_require__(18),
-  sign: __webpack_require__(26),
-  JsonWebTokenError: __webpack_require__(19),
-  NotBeforeError: __webpack_require__(20),
-  TokenExpiredError: __webpack_require__(21),
+  decode: __webpack_require__(17),
+  verify: __webpack_require__(19),
+  sign: __webpack_require__(27),
+  JsonWebTokenError: __webpack_require__(20),
+  NotBeforeError: __webpack_require__(21),
+  TokenExpiredError: __webpack_require__(22),
 };
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var jws = __webpack_require__(17);
+var jws = __webpack_require__(18);
 
 module.exports = function (jwt, options) {
   options = options || {};
@@ -499,23 +541,23 @@ module.exports = function (jwt, options) {
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("jws");
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var JsonWebTokenError = __webpack_require__(19);
-var NotBeforeError    = __webpack_require__(20);
-var TokenExpiredError = __webpack_require__(21);
-var decode            = __webpack_require__(16);
-var timespan          = __webpack_require__(22);
-var PS_SUPPORTED      = __webpack_require__(24);
-var jws               = __webpack_require__(17);
+var JsonWebTokenError = __webpack_require__(20);
+var NotBeforeError    = __webpack_require__(21);
+var TokenExpiredError = __webpack_require__(22);
+var decode            = __webpack_require__(17);
+var timespan          = __webpack_require__(23);
+var PS_SUPPORTED      = __webpack_require__(25);
+var jws               = __webpack_require__(18);
 
 var PUB_KEY_ALGS = ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'];
 var RSA_KEY_ALGS = ['RS256', 'RS384', 'RS512'];
@@ -737,7 +779,7 @@ module.exports = function (jwtString, secretOrPublicKey, options, callback) {
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ ((module) => {
 
 var JsonWebTokenError = function (message, error) {
@@ -757,10 +799,10 @@ module.exports = JsonWebTokenError;
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var JsonWebTokenError = __webpack_require__(19);
+var JsonWebTokenError = __webpack_require__(20);
 
 var NotBeforeError = function (message, date) {
   JsonWebTokenError.call(this, message);
@@ -775,10 +817,10 @@ NotBeforeError.prototype.constructor = NotBeforeError;
 module.exports = NotBeforeError;
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var JsonWebTokenError = __webpack_require__(19);
+var JsonWebTokenError = __webpack_require__(20);
 
 var TokenExpiredError = function (message, expiredAt) {
   JsonWebTokenError.call(this, message);
@@ -793,10 +835,10 @@ TokenExpiredError.prototype.constructor = TokenExpiredError;
 module.exports = TokenExpiredError;
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var ms = __webpack_require__(23);
+var ms = __webpack_require__(24);
 
 module.exports = function (time, iat) {
   var timestamp = iat || Math.floor(Date.now() / 1000);
@@ -816,42 +858,42 @@ module.exports = function (time, iat) {
 };
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("ms");
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var semver = __webpack_require__(25);
+var semver = __webpack_require__(26);
 
 module.exports = semver.satisfies(process.version, '^6.12.0 || >=8.0.0');
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("semver");
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var timespan = __webpack_require__(22);
-var PS_SUPPORTED = __webpack_require__(24);
-var jws = __webpack_require__(17);
-var includes = __webpack_require__(27);
-var isBoolean = __webpack_require__(28);
-var isInteger = __webpack_require__(29);
-var isNumber = __webpack_require__(30);
-var isPlainObject = __webpack_require__(31);
-var isString = __webpack_require__(32);
-var once = __webpack_require__(33);
+var timespan = __webpack_require__(23);
+var PS_SUPPORTED = __webpack_require__(25);
+var jws = __webpack_require__(18);
+var includes = __webpack_require__(28);
+var isBoolean = __webpack_require__(29);
+var isInteger = __webpack_require__(30);
+var isNumber = __webpack_require__(31);
+var isPlainObject = __webpack_require__(32);
+var isString = __webpack_require__(33);
+var once = __webpack_require__(34);
 
 var SUPPORTED_ALGS = ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512', 'HS256', 'HS384', 'HS512', 'none']
 if (PS_SUPPORTED) {
@@ -1051,7 +1093,7 @@ module.exports = function (payload, secretOrPrivateKey, options, callback) {
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ ((module) => {
 
 /**
@@ -1802,7 +1844,7 @@ module.exports = includes;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ ((module) => {
 
 /**
@@ -1878,7 +1920,7 @@ module.exports = isBoolean;
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ ((module) => {
 
 /**
@@ -2149,7 +2191,7 @@ module.exports = isInteger;
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ ((module) => {
 
 /**
@@ -2234,7 +2276,7 @@ module.exports = isNumber;
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ ((module) => {
 
 /**
@@ -2379,7 +2421,7 @@ module.exports = isPlainObject;
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ ((module) => {
 
 /**
@@ -2480,7 +2522,7 @@ module.exports = isString;
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ ((module) => {
 
 /**
@@ -2780,7 +2822,7 @@ module.exports = once;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2801,10 +2843,10 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UserService = void 0;
 const common_1 = __webpack_require__(3);
-const mongoose_1 = __webpack_require__(35);
-const mongoose_2 = __webpack_require__(36);
-const bcrypt = __webpack_require__(37);
-const user_schema_1 = __webpack_require__(38);
+const mongoose_1 = __webpack_require__(36);
+const mongoose_2 = __webpack_require__(37);
+const bcrypt = __webpack_require__(38);
+const user_schema_1 = __webpack_require__(39);
 let UserService = class UserService {
     constructor(userModal) {
         this.userModal = userModal;
@@ -2845,28 +2887,28 @@ exports.UserService = UserService;
 
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("@nestjs/mongoose");
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("mongoose");
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("bcrypt");
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2882,8 +2924,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UserSchema = exports.User = void 0;
-const mongoose_1 = __webpack_require__(35);
-const mongoose_2 = __webpack_require__(36);
+const mongoose_1 = __webpack_require__(36);
+const mongoose_2 = __webpack_require__(37);
 let User = class User extends mongoose_2.Document {
 };
 __decorate([
@@ -2902,7 +2944,462 @@ exports.UserSchema = mongoose_1.SchemaFactory.createForClass(User);
 
 
 /***/ }),
-/* 39 */
+/* 40 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(41), exports);
+__exportStar(__webpack_require__(45), exports);
+
+
+/***/ }),
+/* 41 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuestionModule = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(36);
+const question_controller_1 = __webpack_require__(42);
+const question_schema_1 = __webpack_require__(46);
+const question_service_1 = __webpack_require__(45);
+let QuestionModule = class QuestionModule {
+};
+QuestionModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: question_schema_1.Question.name, schema: question_schema_1.QuestionSchema }]),
+        ],
+        controllers: [question_controller_1.QuestionController],
+        providers: [question_service_1.QuestionService],
+        exports: [question_service_1.QuestionService],
+    })
+], QuestionModule);
+exports.QuestionModule = QuestionModule;
+
+
+/***/ }),
+/* 42 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuestionController = void 0;
+const common_1 = __webpack_require__(3);
+const update_question_dto_1 = __webpack_require__(43);
+const question_interface_1 = __webpack_require__(44);
+const question_service_1 = __webpack_require__(45);
+let QuestionController = class QuestionController {
+    constructor(questionService) {
+        this.questionService = questionService;
+    }
+    async getAll() {
+        return this.questionService.getAll();
+    }
+    async addQuestion(req) {
+        return this.questionService.addQuestion(req.body);
+    }
+    remove(id) {
+        return this.questionService.remove(id);
+    }
+    update(id, updateQuestionDto) {
+        return this.questionService.update(id, updateQuestionDto);
+    }
+    getCorrectRatio(answer) {
+        return this.questionService.getCorrectRatio(answer);
+    }
+};
+__decorate([
+    (0, common_1.Get)('getAll'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", typeof (_b = typeof Promise !== "undefined" && Promise) === "function" ? _b : Object)
+], QuestionController.prototype, "getAll", null);
+__decorate([
+    (0, common_1.Post)('releaseQuestion'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", typeof (_c = typeof Promise !== "undefined" && Promise) === "function" ? _c : Object)
+], QuestionController.prototype, "addQuestion", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], QuestionController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_d = typeof update_question_dto_1.UpdateDto !== "undefined" && update_question_dto_1.UpdateDto) === "function" ? _d : Object]),
+    __metadata("design:returntype", void 0)
+], QuestionController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)('getRatio'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_e = typeof question_interface_1.ListAnswers !== "undefined" && question_interface_1.ListAnswers) === "function" ? _e : Object]),
+    __metadata("design:returntype", void 0)
+], QuestionController.prototype, "getCorrectRatio", null);
+QuestionController = __decorate([
+    (0, common_1.Controller)('question'),
+    __metadata("design:paramtypes", [typeof (_a = typeof question_service_1.QuestionService !== "undefined" && question_service_1.QuestionService) === "function" ? _a : Object])
+], QuestionController);
+exports.QuestionController = QuestionController;
+
+
+/***/ }),
+/* 43 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UpdateDto = void 0;
+const question_interface_1 = __webpack_require__(44);
+class UpdateDto extends question_interface_1.QuestionInterface {
+}
+exports.UpdateDto = UpdateDto;
+
+
+/***/ }),
+/* 44 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ListAnswers = exports.Answer = exports.ResponseQuestion = exports.QuestionInterface = void 0;
+class QuestionInterface {
+}
+exports.QuestionInterface = QuestionInterface;
+class ResponseQuestion {
+}
+exports.ResponseQuestion = ResponseQuestion;
+class Answer {
+}
+exports.Answer = Answer;
+class ListAnswers {
+}
+exports.ListAnswers = ListAnswers;
+
+
+/***/ }),
+/* 45 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuestionService = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(36);
+const mongoose_2 = __webpack_require__(37);
+const question_schema_1 = __webpack_require__(46);
+let QuestionService = class QuestionService {
+    constructor(questionModal) {
+        this.questionModal = questionModal;
+    }
+    async addQuestion(question) {
+        const q = new this.questionModal(question);
+        return q.save();
+    }
+    async getAll() {
+        return this.questionModal.find({}, { correctAns: 0 });
+    }
+    async remove(id) {
+        return this.questionModal.findByIdAndRemove(id);
+    }
+    async update(id, updateQuestionDto) {
+        return this.questionModal.findByIdAndUpdate(id, updateQuestionDto);
+    }
+    async getCorrectRatio(req) {
+        let count = 0;
+        let answers = req.answers;
+        const totalQues = await this.questionModal.countDocuments();
+        for (let i = 0; i < answers.length; i++) {
+            const question = await this.questionModal.findOne({ id: answers[i].id });
+            if (!question) {
+                continue;
+            }
+            if (question.correctAns === answers[i].answer) {
+                count++;
+            }
+        }
+        return count / totalQues;
+    }
+};
+QuestionService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)(question_schema_1.Question.name)),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+], QuestionService);
+exports.QuestionService = QuestionService;
+
+
+/***/ }),
+/* 46 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QuestionSchema = exports.Question = void 0;
+const mongoose_1 = __webpack_require__(36);
+const mongoose_2 = __webpack_require__(37);
+let Question = class Question extends mongoose_2.Document {
+};
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", typeof (_a = typeof String !== "undefined" && String) === "function" ? _a : Object)
+], Question.prototype, "id", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", typeof (_b = typeof String !== "undefined" && String) === "function" ? _b : Object)
+], Question.prototype, "question", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", Array)
+], Question.prototype, "answers", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", typeof (_c = typeof String !== "undefined" && String) === "function" ? _c : Object)
+], Question.prototype, "correctAns", void 0);
+Question = __decorate([
+    (0, mongoose_1.Schema)()
+], Question);
+exports.Question = Question;
+exports.QuestionSchema = mongoose_1.SchemaFactory.createForClass(Question);
+
+
+/***/ }),
+/* 47 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UserModule = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(36);
+const user_controller_1 = __webpack_require__(48);
+const user_schema_1 = __webpack_require__(39);
+const user_service_1 = __webpack_require__(35);
+let UserModule = class UserModule {
+};
+UserModule = __decorate([
+    (0, common_1.Module)({
+        providers: [user_service_1.UserService],
+        controllers: [user_controller_1.UserController],
+        exports: [user_service_1.UserService],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: user_schema_1.User.name, schema: user_schema_1.UserSchema }]),
+        ],
+    })
+], UserModule);
+exports.UserModule = UserModule;
+
+
+/***/ }),
+/* 48 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UserController = void 0;
+const common_1 = __webpack_require__(3);
+const user_dto_1 = __webpack_require__(49);
+const user_service_1 = __webpack_require__(35);
+let UserController = class UserController {
+    constructor(userService) {
+        this.userService = userService;
+    }
+    async getAll() {
+        return await this.userService.getAll();
+    }
+    async addUser(req) {
+        return this.userService.addUser(req.body);
+    }
+    async login(loginUserDto) {
+        return this.userService.login(loginUserDto);
+    }
+};
+__decorate([
+    (0, common_1.Get)('getUser'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "getAll", null);
+__decorate([
+    (0, common_1.Post)('postUser'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", typeof (_b = typeof Promise !== "undefined" && Promise) === "function" ? _b : Object)
+], UserController.prototype, "addUser", null);
+__decorate([
+    (0, common_1.Post)('login'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_c = typeof user_dto_1.LoginUserDto !== "undefined" && user_dto_1.LoginUserDto) === "function" ? _c : Object]),
+    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+], UserController.prototype, "login", null);
+UserController = __decorate([
+    (0, common_1.Controller)('user'),
+    __metadata("design:paramtypes", [typeof (_a = typeof user_service_1.UserService !== "undefined" && user_service_1.UserService) === "function" ? _a : Object])
+], UserController);
+exports.UserController = UserController;
+
+
+/***/ }),
+/* 49 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LoginUserDto = void 0;
+const user_interface_1 = __webpack_require__(50);
+class LoginUserDto extends user_interface_1.UserInterface {
+}
+exports.LoginUserDto = LoginUserDto;
+
+
+/***/ }),
+/* 50 */
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UserInterface = void 0;
+class UserInterface {
+}
+exports.UserInterface = UserInterface;
+
+
+/***/ }),
+/* 51 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AuthModule = void 0;
+const common_1 = __webpack_require__(3);
+const jwt_1 = __webpack_require__(8);
+const passport_1 = __webpack_require__(52);
+const user_module_1 = __webpack_require__(47);
+const auth_service_1 = __webpack_require__(7);
+const constans_1 = __webpack_require__(79);
+const local_strategy_1 = __webpack_require__(80);
+let AuthModule = class AuthModule {
+};
+AuthModule = __decorate([
+    (0, common_1.Module)({
+        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy],
+        imports: [user_module_1.UserModule, passport_1.PassportModule, jwt_1.JwtModule.register({
+                secret: constans_1.jwtConstants.secret,
+                signOptions: { expiresIn: '60s' },
+            }),],
+        exports: [auth_service_1.AuthService],
+    })
+], AuthModule);
+exports.AuthModule = AuthModule;
+
+
+/***/ }),
+/* 52 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -2911,11 +3408,11 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 exports.__esModule = true;
-__export(__webpack_require__(40));
+__export(__webpack_require__(53));
 
 
 /***/ }),
-/* 40 */
+/* 53 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2931,16 +3428,16 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-__exportStar(__webpack_require__(41), exports);
-__exportStar(__webpack_require__(42), exports);
-__exportStar(__webpack_require__(61), exports);
-__exportStar(__webpack_require__(63), exports);
-__exportStar(__webpack_require__(64), exports);
-__exportStar(__webpack_require__(65), exports);
+__exportStar(__webpack_require__(54), exports);
+__exportStar(__webpack_require__(55), exports);
+__exportStar(__webpack_require__(74), exports);
+__exportStar(__webpack_require__(76), exports);
+__exportStar(__webpack_require__(77), exports);
+__exportStar(__webpack_require__(78), exports);
 
 
 /***/ }),
-/* 41 */
+/* 54 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -2953,7 +3450,7 @@ exports.AbstractStrategy = AbstractStrategy;
 
 
 /***/ }),
-/* 42 */
+/* 55 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2982,10 +3479,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthGuard = void 0;
 const common_1 = __webpack_require__(3);
-const passport = __webpack_require__(43);
-const auth_module_options_1 = __webpack_require__(58);
-const options_1 = __webpack_require__(59);
-const memoize_util_1 = __webpack_require__(60);
+const passport = __webpack_require__(56);
+const auth_module_options_1 = __webpack_require__(71);
+const options_1 = __webpack_require__(72);
+const memoize_util_1 = __webpack_require__(73);
 exports.AuthGuard = (0, memoize_util_1.memoize)(createAuthGuard);
 const NO_STRATEGY_ERROR = `In order to use "defaultStrategy", please, ensure to import PassportModule in each place where AuthGuard() is being used. Otherwise, passport won't work correctly.`;
 function createAuthGuard(type) {
@@ -3056,14 +3553,14 @@ const createPassportContext = (request, response) => (type, options, callback) =
 
 
 /***/ }),
-/* 43 */
+/* 56 */
 /***/ ((module, exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var Passport = __webpack_require__(44)
-  , SessionStrategy = __webpack_require__(45);
+var Passport = __webpack_require__(57)
+  , SessionStrategy = __webpack_require__(58);
 
 
 /**
@@ -3078,7 +3575,7 @@ exports = module.exports = new Passport();
  */
 exports.Passport =
 exports.Authenticator = Passport;
-exports.Strategy = __webpack_require__(48);
+exports.Strategy = __webpack_require__(61);
 
 /**
  * Expose strategies.
@@ -3088,14 +3585,14 @@ exports.strategies.SessionStrategy = SessionStrategy;
 
 
 /***/ }),
-/* 44 */
+/* 57 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var SessionStrategy = __webpack_require__(45)
-  , SessionManager = __webpack_require__(50);
+var SessionStrategy = __webpack_require__(58)
+  , SessionManager = __webpack_require__(63);
 
 
 /**
@@ -3120,7 +3617,7 @@ function Authenticator() {
  * @api protected
  */
 Authenticator.prototype.init = function() {
-  this.framework(__webpack_require__(52)());
+  this.framework(__webpack_require__(65)());
   this.use(new SessionStrategy({ key: this._key }, this.deserializeUser.bind(this)));
   this._sm = new SessionManager({ key: this._key }, this.serializeUser.bind(this));
 };
@@ -3562,15 +4059,15 @@ module.exports = Authenticator;
 
 
 /***/ }),
-/* 45 */
+/* 58 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var pause = __webpack_require__(46)
-  , util = __webpack_require__(47)
-  , Strategy = __webpack_require__(48);
+var pause = __webpack_require__(59)
+  , util = __webpack_require__(60)
+  , Strategy = __webpack_require__(61);
 
 
 /**
@@ -3651,7 +4148,7 @@ module.exports = SessionStrategy;
 
 
 /***/ }),
-/* 46 */
+/* 59 */
 /***/ ((module) => {
 
 
@@ -3685,20 +4182,20 @@ module.exports = function(obj){
 };
 
 /***/ }),
-/* 47 */
+/* 60 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("util");
 
 /***/ }),
-/* 48 */
+/* 61 */
 /***/ ((module, exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var Strategy = __webpack_require__(49);
+var Strategy = __webpack_require__(62);
 
 
 /**
@@ -3713,7 +4210,7 @@ exports.Strategy = Strategy;
 
 
 /***/ }),
-/* 49 */
+/* 62 */
 /***/ ((module) => {
 
 /**
@@ -3747,10 +4244,10 @@ module.exports = Strategy;
 
 
 /***/ }),
-/* 50 */
+/* 63 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var merge = __webpack_require__(51);
+var merge = __webpack_require__(64);
 
 function SessionManager(options, serializeUser) {
   if (typeof options == 'function') {
@@ -3849,21 +4346,21 @@ module.exports = SessionManager;
 
 
 /***/ }),
-/* 51 */
+/* 64 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("utils-merge");
 
 /***/ }),
-/* 52 */
+/* 65 */
 /***/ ((module, exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var initialize = __webpack_require__(53)
-  , authenticate = __webpack_require__(55);
+var initialize = __webpack_require__(66)
+  , authenticate = __webpack_require__(68);
   
 /**
  * Framework support for Connect/Express.
@@ -3884,13 +4381,13 @@ exports = module.exports = function() {
 
 
 /***/ }),
-/* 53 */
+/* 66 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var IncomingMessageExt = __webpack_require__(54);
+var IncomingMessageExt = __webpack_require__(67);
 
 
 /**
@@ -3990,7 +4487,7 @@ module.exports = function initialize(passport, options) {
 
 
 /***/ }),
-/* 54 */
+/* 67 */
 /***/ ((module, exports) => {
 
 var req = exports = module.exports = {};
@@ -4088,15 +4585,15 @@ req.isUnauthenticated = function() {
 
 
 /***/ }),
-/* 55 */
+/* 68 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var http = __webpack_require__(56)
-  , IncomingMessageExt = __webpack_require__(54)
-  , AuthenticationError = __webpack_require__(57);
+var http = __webpack_require__(69)
+  , IncomingMessageExt = __webpack_require__(67)
+  , AuthenticationError = __webpack_require__(70);
 
 
 /**
@@ -4466,14 +4963,14 @@ module.exports = function authenticate(passport, name, options, callback) {
 
 
 /***/ }),
-/* 56 */
+/* 69 */
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("http");
 
 /***/ }),
-/* 57 */
+/* 70 */
 /***/ ((module) => {
 
 /**
@@ -4499,7 +4996,7 @@ module.exports = AuthenticationError;
 
 
 /***/ }),
-/* 58 */
+/* 71 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -4512,7 +5009,7 @@ exports.AuthModuleOptions = AuthModuleOptions;
 
 
 /***/ }),
-/* 59 */
+/* 72 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -4526,7 +5023,7 @@ exports.defaultOptions = {
 
 
 /***/ }),
-/* 60 */
+/* 73 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -4552,7 +5049,7 @@ exports.memoize = memoize;
 
 
 /***/ }),
-/* 61 */
+/* 74 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -4568,12 +5065,12 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-__exportStar(__webpack_require__(58), exports);
-__exportStar(__webpack_require__(62), exports);
+__exportStar(__webpack_require__(71), exports);
+__exportStar(__webpack_require__(75), exports);
 
 
 /***/ }),
-/* 62 */
+/* 75 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -4582,7 +5079,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 
 /***/ }),
-/* 63 */
+/* 76 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -4606,7 +5103,7 @@ var PassportModule_1;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PassportModule = void 0;
 const common_1 = __webpack_require__(3);
-const auth_module_options_1 = __webpack_require__(58);
+const auth_module_options_1 = __webpack_require__(71);
 let PassportModule = PassportModule_1 = class PassportModule {
     static register(options) {
         return {
@@ -4657,14 +5154,14 @@ exports.PassportModule = PassportModule;
 
 
 /***/ }),
-/* 64 */
+/* 77 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PassportSerializer = void 0;
-const passport = __webpack_require__(43);
+const passport = __webpack_require__(56);
 class PassportSerializer {
     constructor() {
         const passportInstance = this.getPassportInstance();
@@ -4679,7 +5176,7 @@ exports.PassportSerializer = PassportSerializer;
 
 
 /***/ }),
-/* 65 */
+/* 78 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -4695,7 +5192,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PassportStrategy = void 0;
-const passport = __webpack_require__(43);
+const passport = __webpack_require__(56);
 function PassportStrategy(Strategy, name) {
     class MixinStrategy extends Strategy {
         constructor(...args) {
@@ -4733,462 +5230,7 @@ exports.PassportStrategy = PassportStrategy;
 
 
 /***/ }),
-/* 66 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-__exportStar(__webpack_require__(67), exports);
-__exportStar(__webpack_require__(71), exports);
-
-
-/***/ }),
-/* 67 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QuestionModule = void 0;
-const common_1 = __webpack_require__(3);
-const mongoose_1 = __webpack_require__(35);
-const question_controller_1 = __webpack_require__(68);
-const question_schema_1 = __webpack_require__(72);
-const question_service_1 = __webpack_require__(71);
-let QuestionModule = class QuestionModule {
-};
-QuestionModule = __decorate([
-    (0, common_1.Module)({
-        imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: question_schema_1.Question.name, schema: question_schema_1.QuestionSchema }]),
-        ],
-        controllers: [question_controller_1.QuestionController],
-        providers: [question_service_1.QuestionService],
-        exports: [question_service_1.QuestionService],
-    })
-], QuestionModule);
-exports.QuestionModule = QuestionModule;
-
-
-/***/ }),
-/* 68 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-var _a, _b, _c, _d, _e;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QuestionController = void 0;
-const common_1 = __webpack_require__(3);
-const update_question_dto_1 = __webpack_require__(69);
-const question_interface_1 = __webpack_require__(70);
-const question_service_1 = __webpack_require__(71);
-let QuestionController = class QuestionController {
-    constructor(questionService) {
-        this.questionService = questionService;
-    }
-    async getAll() {
-        return this.questionService.getAll();
-    }
-    async addQuestion(req) {
-        return this.questionService.addQuestion(req.body);
-    }
-    remove(id) {
-        return this.questionService.remove(id);
-    }
-    update(id, updateQuestionDto) {
-        return this.questionService.update(id, updateQuestionDto);
-    }
-    getCorrectRatio(answer) {
-        return this.questionService.getCorrectRatio(answer);
-    }
-};
-__decorate([
-    (0, common_1.Get)('getAll'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_b = typeof Promise !== "undefined" && Promise) === "function" ? _b : Object)
-], QuestionController.prototype, "getAll", null);
-__decorate([
-    (0, common_1.Post)('releaseQuestion'),
-    __param(0, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", typeof (_c = typeof Promise !== "undefined" && Promise) === "function" ? _c : Object)
-], QuestionController.prototype, "addQuestion", null);
-__decorate([
-    (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], QuestionController.prototype, "remove", null);
-__decorate([
-    (0, common_1.Put)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_d = typeof update_question_dto_1.UpdateDto !== "undefined" && update_question_dto_1.UpdateDto) === "function" ? _d : Object]),
-    __metadata("design:returntype", void 0)
-], QuestionController.prototype, "update", null);
-__decorate([
-    (0, common_1.Post)('getRatio'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_e = typeof question_interface_1.ListAnswers !== "undefined" && question_interface_1.ListAnswers) === "function" ? _e : Object]),
-    __metadata("design:returntype", void 0)
-], QuestionController.prototype, "getCorrectRatio", null);
-QuestionController = __decorate([
-    (0, common_1.Controller)('question'),
-    __metadata("design:paramtypes", [typeof (_a = typeof question_service_1.QuestionService !== "undefined" && question_service_1.QuestionService) === "function" ? _a : Object])
-], QuestionController);
-exports.QuestionController = QuestionController;
-
-
-/***/ }),
-/* 69 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UpdateDto = void 0;
-const question_interface_1 = __webpack_require__(70);
-class UpdateDto extends question_interface_1.QuestionInterface {
-}
-exports.UpdateDto = UpdateDto;
-
-
-/***/ }),
-/* 70 */
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ListAnswers = exports.Answer = exports.ResponseQuestion = exports.QuestionInterface = void 0;
-class QuestionInterface {
-}
-exports.QuestionInterface = QuestionInterface;
-class ResponseQuestion {
-}
-exports.ResponseQuestion = ResponseQuestion;
-class Answer {
-}
-exports.Answer = Answer;
-class ListAnswers {
-}
-exports.ListAnswers = ListAnswers;
-
-
-/***/ }),
-/* 71 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-var _a;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QuestionService = void 0;
-const common_1 = __webpack_require__(3);
-const mongoose_1 = __webpack_require__(35);
-const mongoose_2 = __webpack_require__(36);
-const question_schema_1 = __webpack_require__(72);
-let QuestionService = class QuestionService {
-    constructor(questionModal) {
-        this.questionModal = questionModal;
-    }
-    async addQuestion(question) {
-        const q = new this.questionModal(question);
-        return q.save();
-    }
-    async getAll() {
-        return this.questionModal.find({}, { correctAns: 0 });
-    }
-    async remove(id) {
-        return this.questionModal.findByIdAndRemove(id);
-    }
-    async update(id, updateQuestionDto) {
-        return this.questionModal.findByIdAndUpdate(id, updateQuestionDto);
-    }
-    async getCorrectRatio(req) {
-        let count = 0;
-        let answers = req.answers;
-        const totalQues = await this.questionModal.countDocuments();
-        for (let i = 0; i < answers.length; i++) {
-            const question = await this.questionModal.findOne({ id: answers[i].id });
-            if (!question) {
-                continue;
-            }
-            if (question.correctAns === answers[i].answer) {
-                count++;
-            }
-        }
-        return count / totalQues;
-    }
-};
-QuestionService = __decorate([
-    (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(question_schema_1.Question.name)),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
-], QuestionService);
-exports.QuestionService = QuestionService;
-
-
-/***/ }),
-/* 72 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var _a, _b, _c;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QuestionSchema = exports.Question = void 0;
-const mongoose_1 = __webpack_require__(35);
-const mongoose_2 = __webpack_require__(36);
-let Question = class Question extends mongoose_2.Document {
-};
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", typeof (_a = typeof String !== "undefined" && String) === "function" ? _a : Object)
-], Question.prototype, "id", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", typeof (_b = typeof String !== "undefined" && String) === "function" ? _b : Object)
-], Question.prototype, "question", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", Array)
-], Question.prototype, "answers", void 0);
-__decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", typeof (_c = typeof String !== "undefined" && String) === "function" ? _c : Object)
-], Question.prototype, "correctAns", void 0);
-Question = __decorate([
-    (0, mongoose_1.Schema)()
-], Question);
-exports.Question = Question;
-exports.QuestionSchema = mongoose_1.SchemaFactory.createForClass(Question);
-
-
-/***/ }),
-/* 73 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UserModule = void 0;
-const common_1 = __webpack_require__(3);
-const mongoose_1 = __webpack_require__(35);
-const user_controller_1 = __webpack_require__(74);
-const user_schema_1 = __webpack_require__(38);
-const user_service_1 = __webpack_require__(34);
-let UserModule = class UserModule {
-};
-UserModule = __decorate([
-    (0, common_1.Module)({
-        providers: [user_service_1.UserService],
-        controllers: [user_controller_1.UserController],
-        exports: [user_service_1.UserService],
-        imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: user_schema_1.User.name, schema: user_schema_1.UserSchema }]),
-        ],
-    })
-], UserModule);
-exports.UserModule = UserModule;
-
-
-/***/ }),
-/* 74 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-var _a, _b, _c, _d;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UserController = void 0;
-const common_1 = __webpack_require__(3);
-const user_dto_1 = __webpack_require__(75);
-const user_service_1 = __webpack_require__(34);
-let UserController = class UserController {
-    constructor(userService) {
-        this.userService = userService;
-    }
-    async getAll() {
-        return await this.userService.getAll();
-    }
-    async addUser(req) {
-        return this.userService.addUser(req.body);
-    }
-    async login(loginUserDto) {
-        return this.userService.login(loginUserDto);
-    }
-};
-__decorate([
-    (0, common_1.Get)('getUser'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], UserController.prototype, "getAll", null);
-__decorate([
-    (0, common_1.Post)('postUser'),
-    __param(0, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", typeof (_b = typeof Promise !== "undefined" && Promise) === "function" ? _b : Object)
-], UserController.prototype, "addUser", null);
-__decorate([
-    (0, common_1.Post)('login'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_c = typeof user_dto_1.LoginUserDto !== "undefined" && user_dto_1.LoginUserDto) === "function" ? _c : Object]),
-    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
-], UserController.prototype, "login", null);
-UserController = __decorate([
-    (0, common_1.Controller)('user'),
-    __metadata("design:paramtypes", [typeof (_a = typeof user_service_1.UserService !== "undefined" && user_service_1.UserService) === "function" ? _a : Object])
-], UserController);
-exports.UserController = UserController;
-
-
-/***/ }),
-/* 75 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.LoginUserDto = void 0;
-const user_interface_1 = __webpack_require__(76);
-class LoginUserDto extends user_interface_1.UserInterface {
-}
-exports.LoginUserDto = LoginUserDto;
-
-
-/***/ }),
-/* 76 */
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UserInterface = void 0;
-class UserInterface {
-}
-exports.UserInterface = UserInterface;
-
-
-/***/ }),
-/* 77 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.AuthModule = void 0;
-const common_1 = __webpack_require__(3);
-const jwt_1 = __webpack_require__(7);
-const passport_1 = __webpack_require__(39);
-const user_module_1 = __webpack_require__(73);
-const auth_service_1 = __webpack_require__(6);
-const constans_1 = __webpack_require__(78);
-const local_strategy_1 = __webpack_require__(79);
-let AuthModule = class AuthModule {
-};
-AuthModule = __decorate([
-    (0, common_1.Module)({
-        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy],
-        imports: [user_module_1.UserModule, passport_1.PassportModule, jwt_1.JwtModule.register({
-                secret: constans_1.jwtConstants.secret,
-                signOptions: { expiresIn: '60s' },
-            }),],
-        exports: [auth_service_1.AuthService],
-    })
-], AuthModule);
-exports.AuthModule = AuthModule;
-
-
-/***/ }),
-/* 78 */
+/* 79 */
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -5201,7 +5243,7 @@ exports.jwtConstants = {
 
 
 /***/ }),
-/* 79 */
+/* 80 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -5218,10 +5260,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LocalStrategy = void 0;
-const passport_local_1 = __webpack_require__(80);
-const passport_1 = __webpack_require__(39);
+const passport_local_1 = __webpack_require__(81);
+const passport_1 = __webpack_require__(52);
 const common_1 = __webpack_require__(3);
-const auth_service_1 = __webpack_require__(6);
+const auth_service_1 = __webpack_require__(7);
 let LocalStrategy = class LocalStrategy extends (0, passport_1.PassportStrategy)(passport_local_1.Strategy) {
     constructor(authService) {
         super();
@@ -5243,13 +5285,13 @@ exports.LocalStrategy = LocalStrategy;
 
 
 /***/ }),
-/* 80 */
+/* 81 */
 /***/ ((module, exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var Strategy = __webpack_require__(81);
+var Strategy = __webpack_require__(82);
 
 
 /**
@@ -5264,15 +5306,15 @@ exports.Strategy = Strategy;
 
 
 /***/ }),
-/* 81 */
+/* 82 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /**
  * Module dependencies.
  */
-var passport = __webpack_require__(48)
-  , util = __webpack_require__(47)
-  , lookup = (__webpack_require__(82).lookup);
+var passport = __webpack_require__(61)
+  , util = __webpack_require__(60)
+  , lookup = (__webpack_require__(83).lookup);
 
 
 /**
@@ -5371,7 +5413,7 @@ module.exports = Strategy;
 
 
 /***/ }),
-/* 82 */
+/* 83 */
 /***/ ((__unused_webpack_module, exports) => {
 
 exports.lookup = function(obj, field) {
@@ -5386,6 +5428,13 @@ exports.lookup = function(obj, field) {
   return null;
 };
 
+
+/***/ }),
+/* 84 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("cache-manager-redis-store");
 
 /***/ })
 /******/ 	]);

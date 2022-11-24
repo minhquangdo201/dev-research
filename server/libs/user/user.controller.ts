@@ -6,7 +6,7 @@ import { UserService } from "./user.service";
 @Controller('user')
 export class UserController {
     constructor(private userService: UserService){}
-
+    
     @Get('getUser')
     async getAll(){
         return await this.userService.getAll();
