@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import RegisterModal from './Register/RegisterModal';
 import './index.css'
 import { creatAccount, getCacheAnswers, login } from './Service/userService';
@@ -9,12 +9,13 @@ interface User {
     userName: string;
     password: string;
 }
+
 const LoginPage = () => {
     let navigate = useNavigate()
-    const userName = localStorage.getItem('name')
+    const [userName, setUserName] = useState('')
     const [users, setUsers] = useState<User[]>([])
-    const [loginUserName, setLoginUserName] = useState<string>();
-    const [loginPassword, setLoginPassword] = useState<string>();
+    const [loginUserName, setLoginUserName] = useState<string>('');
+    const [loginPassword, setLoginPassword] = useState<string>('');
     const handleCreatAccount = async (account: User) => {
         await creatAccount(account);
         const newAccount: User = {
@@ -24,23 +25,29 @@ const LoginPage = () => {
         setUsers([newAccount, ...users]);
 
     }
+    useEffect(()=> {
+        setUserName(loginUserName)
+        localStorage.setItem('userName', userName)  
+    })
 
     const handleLogin = async (e: any) => {
         e.preventDefault();
-        if (!loginUserName || !loginPassword) {
+        if (loginUserName === '' || loginPassword === '') {
             toast.error('Vui lòng nhập đầy đủ !')
             return;
         }
         const success = await login({ userName: loginUserName, password: loginPassword });
-        if (success) {
-            localStorage.setItem('userName',loginUserName)
-            getCacheAnswers(userName)
+        if (success) { 
+            console.log(localStorage.getItem('userName'))
+            await getCacheAnswers(localStorage.getItem('userName'))
             navigate('home')
             toast.success('Đăng nhập thành công!')
         } else {
             toast.error('Tài khoản hoặc mật khẩu không đúng!')
         }
+       
     }
+
     return (
         <div className='login-form-outer'>
             <form className='login-form' onSubmit={(e) => handleLogin(e)}>

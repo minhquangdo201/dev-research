@@ -92,7 +92,7 @@ let AppController = class AppController {
         return await this.appService.saveUserAnswer(userAnswer);
     }
     async getAnswers(username) {
-        return await this.appService.getUserAnswers(username);
+        return await this.appService.getUserAnswers(username.userName);
     }
 };
 __decorate([
@@ -145,7 +145,6 @@ let AppService = class AppService {
     }
     async saveUserAnswer(userAnswer) {
         await this.cacheManager.set(userAnswer.username, userAnswer.answers, 86400);
-        console.log(await this.cacheManager.get(userAnswer.username));
     }
     async getUserAnswers(username) {
         console.log(await this.cacheManager.get(username));
