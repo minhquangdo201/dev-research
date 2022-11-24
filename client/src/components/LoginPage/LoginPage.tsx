@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import RegisterModal from './Register/RegisterModal';
 import './index.css'
-import { creatAccount, login } from './Service/userService';
+import { creatAccount, getCacheAnswers, login } from './Service/userService';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ interface User {
 }
 const LoginPage = () => {
     let navigate = useNavigate()
+    const userName = localStorage.getItem('name')
     const [users, setUsers] = useState<User[]>([])
     const [loginUserName, setLoginUserName] = useState<string>();
     const [loginPassword, setLoginPassword] = useState<string>();
@@ -26,15 +27,14 @@ const LoginPage = () => {
 
     const handleLogin = async (e: any) => {
         e.preventDefault();
-        console.log(loginUserName)
-        console.log(loginPassword)
         if (!loginUserName || !loginPassword) {
             toast.error('Vui lòng nhập đầy đủ !')
             return;
         }
         const success = await login({ userName: loginUserName, password: loginPassword });
-        console.log(success)
         if (success) {
+            localStorage.setItem('userName',loginUserName)
+            getCacheAnswers(userName)
             navigate('home')
             toast.success('Đăng nhập thành công!')
         } else {

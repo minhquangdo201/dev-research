@@ -1,17 +1,25 @@
-import { Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Request, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthService } from 'libs/auth/auth.service';
 import { AuthGuard } from '@nestjs/passport';
 
-
+interface UserAnswer {
+  username: string;
+  answers: any
+}
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService, private authService: AuthService) {}
-  @UseGuards(AuthGuard('local'))
-  @Post('auth/login')
-  async login(@ Request() req) {
-    return this.authService.login(req.user);
+
+  @Post('cacheAnswers')
+  async saveAnswers(@Body() userAnswer: UserAnswer){
+    return await this.appService.saveUserAnswer(userAnswer);
   }
+
+  @Post('getCacheAnswers')
+  async getAnswers(@Body() username) {
+    return await this.appService.getUserAnswers(username)
+    }
 }
 
 

@@ -29,3 +29,13 @@ export const login = async ({userName, password}: {userName: string, password: s
             console.log(error);
         });
 }
+
+export const getCacheAnswers = async(username: any) => {
+    const url = 'http://localhost:8000/getCacheAnswers'
+    try {
+        const res = await axios.post(url, username)
+        return res.data
+    } catch(error) {
+        return error
+    }
+}
