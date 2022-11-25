@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Request, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthService } from 'libs/auth/auth.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -6,6 +6,10 @@ import { AuthGuard } from '@nestjs/passport';
 interface UserAnswer {
   username: string;
   answers: any
+}
+
+interface UserName { 
+  userName: string
 }
 @Controller()
 export class AppController {
@@ -17,9 +21,9 @@ export class AppController {
   }
 
   @Post('getCacheAnswers')
-  async getAnswers(@Body() username) {
-    return await this.appService.getUserAnswers(username)
-    }
+  async getAnswers(@Body() username: UserName) {
+    return await this.appService.getUserAnswers(username.userName)
+  }
 }
 
 

@@ -38,13 +38,13 @@ export const sendAnswers = async (answers: ListAnswers): Promise<any> => {
         return error
     }
 }
-export const cacheAnswer = async (username: any,answers: ListAnswers): Promise<any> => {
+export const cacheAnswer = async (username: any,answers: ListAnswers): Promise<ListAnswers> => {
     const url = 'http://localhost:8000/cacheAnswers'
     try {
         const res = await axios.post(url, {username, answers})
         return res.data
-    } catch(error){
-        return error
+    } catch(error: any){
+        return error.response.data.message
     }
 }
 

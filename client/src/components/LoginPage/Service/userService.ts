@@ -3,6 +3,17 @@ interface User {
     userName: string;
     password: string;
 }
+
+interface ListAnswers {
+    answers: Answer[]
+}
+
+interface Answer {
+    id?: string;
+    answer?: string;
+}
+
+
 export const creatAccount = async (user: User): Promise<any> => {
     axios.post('http://localhost:8000/user/postUser', {
         userName: user.userName,
@@ -30,12 +41,13 @@ export const login = async ({userName, password}: {userName: string, password: s
         });
 }
 
-export const getCacheAnswers = async(username: any) => {
+export const getCacheAnswers = async(userName: any): Promise<ListAnswers> => {
     const url = 'http://localhost:8000/getCacheAnswers'
     try {
-        const res = await axios.post(url, username)
+        const res = await axios.post(url, {userName: userName})
+        console.log(res.data)
         return res.data
-    } catch(error) {
+    } catch(error: any) {
         return error
     }
 }

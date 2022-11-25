@@ -11,7 +11,6 @@ export class AppService {
 
     async saveUserAnswer(userAnswer: UserAnswer){
         await this.cacheManager.set(userAnswer.username,userAnswer.answers,86400)
-        console.log(await this.cacheManager.get(userAnswer.username))
     }
 
     async getUserAnswers(username){
