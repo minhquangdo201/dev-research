@@ -41,7 +41,7 @@ export const login = async ({userName, password}: {userName: string, password: s
         });
 }
 
-export const getCacheAnswers = async(userName: any): Promise<ListAnswers> => {
+export const getCacheAnswers = async(userName: any) => {
     const url = 'http://localhost:8000/getCacheAnswers'
     try {
         const res = await axios.post(url, {userName: userName})

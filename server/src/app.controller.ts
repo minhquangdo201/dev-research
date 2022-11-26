@@ -11,6 +11,13 @@ interface UserAnswer {
 interface UserName { 
   userName: string
 }
+
+interface ResponseQuestion {
+  id: String;
+  question: String;
+  answers: String[];
+  answered: String
+}
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService, private authService: AuthService) {}
@@ -21,7 +28,7 @@ export class AppController {
   }
 
   @Post('getCacheAnswers')
-  async getAnswers(@Body() username: UserName) {
+  async getAnswers(@Body() username: UserName):Promise<ResponseQuestion[]> {
     return await this.appService.getUserAnswers(username.userName)
   }
 }
