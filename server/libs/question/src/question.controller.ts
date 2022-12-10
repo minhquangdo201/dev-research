@@ -31,4 +31,9 @@ export class QuestionController {
     getCorrectRatio(@Body() answer: ListAnswers){
         return this.questionService.getCorrectRatio(answer)
     }
+
+    @Post('importQuestion')
+    async importQuestion() {
+        return this.questionService.importQuestion();
+    }
 }
