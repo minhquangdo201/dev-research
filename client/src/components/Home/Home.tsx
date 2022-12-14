@@ -35,12 +35,12 @@ export const HomePage = (): ReactElement => {
     const [score, setScore] = useState();
     const getListQuestion = async () => {
         const listQuestion: Question[] = await getQuestion()
-        let listAnswers: ListAnswers = {answers: []}
+        let listAnswers: ListAnswers = { answers: [] }
         const list: ResponseQuestion[] = await getCacheAnswers(userName)
-        if(list.length !== 0){
-            for(let i = 0; i < list.length; i++){
-                if(list[i].answered !== ''){
-                    listAnswers.answers.push({id: list[i].id, answer: list[i].answered})
+        if (list.length !== 0) {
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].answered !== '') {
+                    listAnswers.answers.push({ id: list[i].id, answer: list[i].answered })
                 }
             }
         }
@@ -84,7 +84,7 @@ export const HomePage = (): ReactElement => {
                         return (
                             <div >
                                 <div>{val.id}. {val.question}</div>
-                                <div>{listAnswereds.answers.filter((ans) => ans.id == val.id)[0]?.answer ? listAnswereds.answers.filter((ans) => ans.id == val.id)[0].answer : "None"}</div>
+
                                 <Button className="answer-button" onClick={() => { handleChooseAnswer(val.answers[0], val.id) }}>A.{val.answers[0]}</Button>
 
                                 <Button className="answer-button" onClick={() => { handleChooseAnswer(val.answers[1], val.id) }}>B.{val.answers[1]}</Button>
@@ -92,6 +92,10 @@ export const HomePage = (): ReactElement => {
                                 <Button className="answer-button" onClick={() => { handleChooseAnswer(val.answers[2], val.id) }}>C.{val.answers[2]}</Button>
 
                                 <Button className="answer-button" onClick={() => { handleChooseAnswer(val.answers[3], val.id) }}>D.{val.answers[3]}</Button>
+
+                                <div>{
+                                    listAnswereds.answers.filter((ans) => ans.id == val.id)[0]?.answer ? "Đáp án của bạn: " + listAnswereds.answers.filter((ans) => ans.id == val.id)[0].answer : "Đáp án của bạn: "}
+                                </div>
                             </div>
                         )
                     })}
